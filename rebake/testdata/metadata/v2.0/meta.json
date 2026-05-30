@@ -1,0 +1,122 @@
+{
+  "$schema": "https://raw.githubusercontent.com/airoa-org/airoa-metadata/main/airoa_metadata/schemas/v2_0.json",
+  "schema_version": "2.0",
+  "uuid": "1fe37622-18bb-4402-a12e-0d7c3d94e518",
+  "robot": {
+    "uri": null,
+    "type": "HSR",
+    "id": "robot002",
+    "checksum": null
+  },
+  "files": [
+    {
+      "type": "rosbag",
+      "name": "data.bag",
+      "checksum": null
+    }
+  ],
+  "environment": {
+    "type": "real_world",
+    "site": "location001",
+    "location": ""
+  },
+  "runner": {
+    "type": "operator",
+    "organization": "",
+    "name": ""
+  },
+  "devices": [],
+  "programs": [
+    {
+      "role": "interface",
+      "name": "hsr_leader_teleop",
+      "source": {
+        "git": {
+          "uri": "https://github.com/airoa-org/hsr_leader_teleop.git",
+          "hash": "v7.0.0",
+          "branch": "HEAD",
+          "tag": null
+        }
+      }
+    },
+    {
+      "role": "data_collection",
+      "name": "rosbag_manager",
+      "source": {
+        "git": {
+          "uri": "https://github.com/airoa-org/hsr_data_collection.git",
+          "hash": "v4.0.0",
+          "branch": "develop",
+          "tag": null
+        }
+      }
+    }
+  ],
+  "episode": {
+    "start_time": 1750037087.8824904,
+    "end_time": 1750037220.081133,
+    "success": true,
+    "label": "Bake a toast"
+  },
+  "labels": [
+    "open the oven toaster",
+    "pick up a slice of bread on the plate",
+    "place a slice of bread into the oven toaster",
+    "close the oven toaster",
+    "open the oven toaster",
+    "take a slice of bread out of the oven toaster",
+    "place a slice of bread on the plate",
+    "close the oven toaster",
+    "Bake a toast"
+  ],
+  "segments": [
+    {
+      "start_time": 1750037087.8824904,
+      "end_time": 1750037108.5811408,
+      "label_idx": 0,
+      "success": true
+    },
+    {
+      "start_time": 1750037117.0811522,
+      "end_time": 1750037132.28115,
+      "label_idx": 1,
+      "success": true
+    },
+    {
+      "start_time": 1750037132.681155,
+      "end_time": 1750037146.5811129,
+      "label_idx": 2,
+      "success": true
+    },
+    {
+      "start_time": 1750037146.8814409,
+      "end_time": 1750037158.681084,
+      "label_idx": 3,
+      "success": true
+    },
+    {
+      "start_time": 1750037158.9811552,
+      "end_time": 1750037173.6812286,
+      "label_idx": 4,
+      "success": true
+    },
+    {
+      "start_time": 1750037173.9812186,
+      "end_time": 1750037187.2810905,
+      "label_idx": 5,
+      "success": true
+    },
+    {
+      "start_time": 1750037197.4811676,
+      "end_time": 1750037197.6811657,
+      "label_idx": 6,
+      "success": true
+    },
+    {
+      "start_time": 1750037219.7811415,
+      "end_time": 1750037220.081133,
+      "label_idx": 7,
+      "success": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# VideoEncoderConfig example for H.264 codec (x264)
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_h264.yaml
+
+fps: 100
+gop: 2
+crf: "15"
+scaling: Bicubic
+codec_config:
+  codec: H264
+  preset: fast  # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+  # Optional parameters:
+  # threads: 4
+  # tune:
+  #   - film        # Options: film, animation, grain, stillimage, fastdecode, zerolatency

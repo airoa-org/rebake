@@ -1,0 +1,4 @@
+[submodule "rebake/third_party/rosbag-rs"]
+	path = rebake/third_party/rosbag-rs
+	url = https://github.com/airoa-org/rosbag-rs.git
+	branch = master

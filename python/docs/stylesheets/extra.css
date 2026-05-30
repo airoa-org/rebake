@@ -1,0 +1,26 @@
+/* Customize mkdocstrings symbol type labels */
+/* Change abbreviated labels to full names */
+
+.doc-symbol-attribute::after {
+    content: "attribute" !important;
+}
+
+.doc-symbol-method::after {
+    content: "method" !important;
+}
+
+.doc-symbol-function::after {
+    content: "function" !important;
+}
+
+.doc-symbol-class::after {
+    content: "class" !important;
+}
+
+.doc-symbol-module::after {
+    content: "module" !important;
+}
+
+.doc-symbol-property::after {
+    content: "property" !important;
+}

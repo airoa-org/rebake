@@ -1,0 +1,50 @@
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# MkDocs
+site/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Test data & outputs
+**/*.bag
+**/*.mcap
+**/*.bin
+**/*.jpg
+**/*.png
+**/*.mp4
+**/*.json
+**/*.jsonl
+**/*.parquet
+
+# Allowlist exceptions for tracked fixtures and configs
+!rebake/testdata/**
+!python/tests/**/fixtures/**
+!config/**
+# README / docs images (e.g. assets/hero.png)
+!assets/**
+
+# data
+/dataset
+/hsr2
+/lerobot_*
+/measure
+/orchestrator_work
+/video_cache

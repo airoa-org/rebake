@@ -1,0 +1,23 @@
+# VideoEncoderConfig example for H.264 VA-API hardware encoder.
+#
+# Tuned as a general-purpose setting for typical robotics datasets:
+# - GOP is capped at 20 frames for random-access performance.
+# - QP 21 keeps all measured topic-video average VMAF values above 93.
+# - async-depth 16 was the fastest measured setting and produced identical
+#   bitstreams to async-depth 4/8 in the retuning run.
+#
+# Use with:
+#   rebake export data.mcap -o output --video-config config/export/video_config_h264_vaapi.yaml
+
+fps: 100
+gop: 20
+crf: "0"
+scaling: Bicubic
+codec_config:
+  codec: H264_VAAPI
+  qp: 21
+  profile: high
+  async-depth: 16
+  # Optional parameters:
+  # device: /dev/dri/renderD128
+  # b-depth: 1

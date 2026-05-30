@@ -1,0 +1,73 @@
+{
+    "uuid": "1fe37622-18bb-4402-a12e-0d7c3d94e518",
+    "version": "1.3",
+    "files": [
+        {
+            "type": "rosbag",
+            "name": "data.bag"
+        }
+    ],
+    "context": {
+        "entities": [
+            {
+                "role": "robot",
+                "id": "robot002"
+            },
+            {
+                "role": "location",
+                "name": "location001"
+            }
+        ],
+        "components": [
+            {
+                "role": "interface",
+                "name": "hsr_leader_teleop",
+                "source": {
+                    "git": {
+                        "uri": "https://github.com/airoa-org/hsr_leader_teleop.git",
+                        "hash": "v7.0.0",
+                        "branch": "HEAD"
+                    }
+                }
+            },
+            {
+                "role": "data_collection",
+                "name": "rosbag_manager",
+                "source": {
+                    "git": {
+                        "uri": "https://github.com/airoa-org/hsr_data_collection.git",
+                        "hash": "v4.0.0",
+                        "branch": "develop"
+                    }
+                }
+            }
+        ]
+    },
+    "run": {
+        "total_time_s": 132.19864225387573,
+        "instructions": [
+            { "idx": 0, "text": ["open the oven toaster"] },
+            { "idx": 1, "text": ["pick up a slice of bread on the plate"] },
+            { "idx": 2, "text": ["place a slice of bread into the oven toaster"] },
+            { "idx": 3, "text": ["close the oven toaster"] },
+            { "idx": 4, "text": ["open the oven toaster"] },
+            { "idx": 5, "text": ["take a slice of bread out of the oven toaster"] },
+            { "idx": 6, "text": ["place a slice of bread on the plate"] },
+            { "idx": 7, "text": ["close the oven toaster"] },
+            { "idx": 8, "text": ["Bake a toast"] }
+        ],
+        "segments": [
+            { "start_time": 1750037087.8824904, "end_time": 1750037108.5811408, "instruction_idx": 0, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037117.0811522, "end_time": 1750037132.2811499, "instruction_idx": 1, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037132.681155, "end_time": 1750037146.5811129, "instruction_idx": 2, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037146.8814409, "end_time": 1750037158.681084, "instruction_idx": 3, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037158.9811552, "end_time": 1750037173.6812286, "instruction_idx": 4, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037173.9812186, "end_time": 1750037187.2810903, "instruction_idx": 5, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037197.4811676, "end_time": 1750037197.6811655, "instruction_idx": 6, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037219.7811415, "end_time": 1750037220.0811327, "instruction_idx": 7, "success": true, "controlled_by": "operator" },
+            { "start_time": 1750037087.8824904, "end_time": 1750037220.0811327, "instruction_idx": 8, "success": true, "controlled_by": "operator", "is_composite": true }
+        ],
+        "episode_label": "Operator003"
+    },
+    "$schema": "https://raw.githubusercontent.com/airoa-org/airoa-metadata/refs/tags/v1.3/airoa_metadata/schemas/v1_3.json"
+}

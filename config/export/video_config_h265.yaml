@@ -1,0 +1,15 @@
+# VideoEncoderConfig example for H.265/HEVC codec (x265)
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_h265.yaml
+
+fps: 100
+gop: 100
+crf: "18"
+scaling: Bicubic
+codec_config:
+  codec: H265
+  preset: superfast  # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+  # Optional parameters:
+  # threads: 4
+  # frame-threads: 2
+  # tune:
+  #   - grain       # Options: grain, animation, fastdecode, zerolatency

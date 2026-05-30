@@ -1,0 +1,101 @@
+site_name: rebake
+site_description: Python library for converting ROS bag files to ML-ready datasets
+site_url: https://airoa-org.github.io/rebake-rs/
+
+repo_name: rebake-rs
+repo_url: https://github.com/airoa-org/rebake-rs
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            # Headings
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            # Members
+            members_order: source
+            group_by_category: true
+            # Docstrings
+            docstring_style: google
+            docstring_section_style: spacy
+            merge_init_into_class: true
+            show_if_no_docstring: false
+            # Signatures
+            show_signature: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 80
+            # Source
+            show_source: false
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+  - API Reference:
+      - Overview: api/index.md
+      - Analysis: api/analysis.md
+      - Core: api/core.md
+      - Ingest: api/ingest.md
+      - Synchronize: api/synchronize.md
+      - Enrich: api/enrich.md
+      - Encode: api/encode.md
+      - Decode: api/decode.md
+      - Transform: api/transform.md
+      - Pipeline: api/pipeline.md
+      - Exceptions: api/exceptions.md

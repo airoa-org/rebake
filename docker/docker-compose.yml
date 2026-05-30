@@ -1,0 +1,28 @@
+name: rebake-rs
+
+# Base configuration (CPU-only, software encoding)
+#
+# For hardware acceleration, see docker-compose.vaapi.yml
+
+services:
+  rebake-dev:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    image: rebake:latest
+    container_name: rebake-dev
+    working_dir: /usr/src/rebake-rs
+    tty: true
+    stdin_open: true
+    cap_add:
+      - SYS_ADMIN
+      - SYS_NICE    # Required for x265 NUMA thread pool optimization
+    environment:
+      CARGO_HOME: /root/.cargo
+      RUST_BACKTRACE: "1"
+    volumes:
+      - ../:/usr/src/rebake-rs
+      - cargo-target:/usr/src/rebake-rs/target
+
+volumes:
+  cargo-target:

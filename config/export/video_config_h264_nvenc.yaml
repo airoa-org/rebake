@@ -1,0 +1,17 @@
+# VideoEncoderConfig example for H.264 NVENC hardware encoder.
+#
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_h264_nvenc.yaml
+
+fps: 100
+gop: 20
+# H.264 NVENC ignores crf; quality is controlled by qp.
+crf: "15"
+scaling: Bicubic
+codec_config:
+  codec: H264_NVENC
+  qp: 26
+  preset: P5
+  tune: Hq
+  profile: high
+  b_frames: 1
+  rc_lookahead: 32

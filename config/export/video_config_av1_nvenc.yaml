@@ -1,0 +1,16 @@
+# VideoEncoderConfig example for AV1 NVENC hardware encoder.
+# Defaults were measured on RTX 5090 / UMI RGB data for VMAF >= 93.
+#
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_av1_nvenc.yaml
+
+fps: 100
+gop: 20
+crf: "28"
+scaling: Bicubic
+codec_config:
+  codec: AV1_NVENC
+  qp: 130
+  preset: P7
+  # Keep B-frames disabled for frame-indexed packaging. Increase this for
+  # archive-oriented compression where frame reordering is acceptable.
+  b_frames: 0

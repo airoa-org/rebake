@@ -1,0 +1,59 @@
+ARG BASE_IMAGE=rebake:latest
+FROM ${BASE_IMAGE}
+
+# This image intentionally extends the base development image and only rebuilds
+# FFmpeg with NVENC enabled. On clean checkouts, build docker/Dockerfile first:
+#   docker compose -f docker/docker-compose.yml build rebake-dev
+
+ARG FFMPEG_VERSION=n8.0
+ARG NV_CODEC_HEADERS_VERSION=13.0.19.0
+ARG NV_CODEC_HEADERS_TAG=n13.0.19.0
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# FFmpeg's native PNG decoder depends on zlib. The RGB image2pipe path can pipe
+# PNG frames directly to FFmpeg, so keep the decoder available in the NVENC image.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install the FFmpeg NVIDIA codec headers matching Video Codec SDK 13.x.
+RUN curl -L \
+      "https://github.com/FFmpeg/nv-codec-headers/releases/download/${NV_CODEC_HEADERS_TAG}/nv-codec-headers-${NV_CODEC_HEADERS_VERSION}.tar.gz" \
+      | tar xz -C /tmp && \
+    cd "/tmp/nv-codec-headers-${NV_CODEC_HEADERS_VERSION}" && \
+    make install PREFIX=/usr && \
+    ldconfig && \
+    rm -rf "/tmp/nv-codec-headers-${NV_CODEC_HEADERS_VERSION}"
+
+# Rebuild FFmpeg with NVENC enabled. The NVIDIA driver libraries are provided
+# at runtime by nvidia-container-toolkit, so the build only needs ffnvcodec
+# headers and does not vendor driver libraries into the image.
+RUN curl -L "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${FFMPEG_VERSION}.tar.gz" \
+      | tar xz -C /tmp && \
+    cd "/tmp/FFmpeg-${FFMPEG_VERSION}" && \
+    ./configure \
+      --prefix=/usr \
+      --enable-shared \
+      --disable-static \
+      --disable-doc \
+      --disable-ffplay \
+      --enable-gpl \
+      --enable-version3 \
+      --enable-libvmaf \
+      --enable-libsvtav1 \
+      --enable-libx264 \
+      --enable-libx265 \
+      --enable-libdav1d \
+      --enable-vaapi \
+      --enable-libdrm \
+      --enable-ffnvcodec \
+      --enable-nvenc \
+      --extra-cflags="-O3 -pipe" && \
+    make -j"$(nproc)" && \
+    make install && \
+    ldconfig && \
+    rm -rf "/tmp/FFmpeg-${FFMPEG_VERSION}"
+
+RUN ffmpeg -hide_banner -encoders | grep -E "h264_nvenc|hevc_nvenc|av1_nvenc" && \
+    ffmpeg -hide_banner -decoders | grep -E "png|mjpeg"

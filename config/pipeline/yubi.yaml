@@ -1,0 +1,53 @@
+work_dir: "./orchestrator_work"
+save_contexts: false
+stop_on_error: false
+stage_configs:
+  - Rosbag2IngestorConfig: {}
+  - TfBufferEnricherConfig: {}
+  - ZeroOrderHoldTimeSynchronizerConfig:
+      fps: 30
+  - TfChainEnricherConfig:
+      frame_pairs:
+        - source: quest_origin
+          target: quest_hmd
+        - source: quest_origin
+          target: quest_left_controller
+        - source: quest_origin
+          target: quest_right_controller
+        - source: quest_origin
+          target: left_hand_root
+        - source: quest_origin
+          target: right_hand_root
+        - source: quest_origin
+          target: left_hand_cam_link
+        - source: quest_origin
+          target: right_hand_cam_link
+        - source: quest_origin
+          target: left_left_finger_tip_link
+        - source: quest_origin
+          target: left_right_finger_tip_link
+        - source: quest_origin
+          target: right_left_finger_tip_link
+        - source: quest_origin
+          target: right_right_finger_tip_link
+        - source: left_hand_root
+          target: right_hand_root
+  - DeltaTransformEnricherConfig:
+      topic_names: ["/tf_chain"]
+      delta_reference_frame: previous_target_frame
+  - ShiftEnricherConfig:
+      source_topic: /joint_states
+      output_topic: /joint_states/action
+      shift_steps: 1
+  - LeRobotV21TransformerConfig:
+      outdir: "./lerobot_yubi"
+      robot_model: "./config/robot_model/yubi.yaml"
+      video_config:
+        fps: 30
+        gop: 2
+        crf: "30"
+        scaling: "Bicubic"
+        codec_config:
+          codec: "AV1"
+          lp: 6
+      separate_per_primitive: true

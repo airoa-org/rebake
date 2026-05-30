@@ -1,0 +1,16 @@
+# VideoEncoderConfig example for H.265/HEVC NVENC hardware encoder.
+#
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_h265_nvenc.yaml
+
+fps: 100
+gop: 100
+crf: "18"
+scaling: Bicubic
+codec_config:
+  codec: H265_NVENC
+  qp: 25
+  preset: P4
+  tune: Hq
+  # Keep B-frames disabled for frame-indexed packaging. Increase this for
+  # archive-oriented compression where frame reordering is acceptable.
+  b_frames: 0

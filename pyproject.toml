@@ -1,0 +1,39 @@
+[project]
+name = "rebake-rs"
+version = "0.1.0"
+description = "Development workspace for rebake-rs — ROS bag → ML dataset pipeline analysis and Python bindings"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "altair>=5.5.0",
+    "numpy>=1.26.0",
+    "pandas>=2.3.3",
+    "polars[pyarrow]>=1.35.1",
+    "pyarrow>=22.0.0",
+    "airoa-metadata",
+    "mcap>=1.3.0",
+    "mcap-ros2-support>=0.5.6",
+]
+
+[project.optional-dependencies]
+huggingface = [
+    "huggingface-hub>=0.35.3",
+]
+marimo = [
+    "marimo[sql]>=0.17.5",
+]
+video = [
+    "opencv-python>=4.12.0.88",
+    "av>=16.0.1",
+]
+
+[tool.marimo.runtime]
+output_max_bytes = 10_000_000
+
+[tool.uv.sources]
+airoa-metadata = { git = "https://github.com/airoa-org/airoa-metadata.git", tag = "v1.4" }
+
+[tool.uv.workspace]
+members = [
+    "python",
+]

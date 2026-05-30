@@ -1,0 +1,35 @@
+# NVIDIA NVENC Hardware Encoding Override
+#
+# Usage:
+#   cd docker
+#   docker compose -f docker-compose.yml build rebake-dev
+#   docker compose -f docker-compose.yml -f docker-compose.nvenc.yml up -d --build
+#
+# Requirements:
+#   - NVIDIA driver with NVENC support
+#   - nvidia-container-toolkit with CDI configured on the host:
+#       sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+#       nvidia-ctk cdi list
+#
+# Dockerfile.nvenc extends the local rebake:latest image so it can reuse the
+# Rust/Python build environment from docker/Dockerfile and only rebuild FFmpeg
+# with NVENC enabled. Build the base image first on clean checkouts.
+#
+# This override uses CDI (`devices: nvidia.com/gpu=all`) instead of Docker's
+# NVIDIA device reservation block. CDI keeps the GPU devices explicit in the
+# container spec and avoids the long-running container NVML failures that can
+# happen with the systemd cgroup + NVIDIA runtime hook path.
+
+services:
+  rebake-dev:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.nvenc
+    image: rebake:nvenc
+    environment:
+      CARGO_HOME: /root/.cargo
+      RUST_BACKTRACE: "1"
+      # Fallback capability list in case the host CDI spec omits `video`.
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
+    devices:
+      - "nvidia.com/gpu=all"

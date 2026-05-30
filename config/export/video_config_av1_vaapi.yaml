@@ -1,0 +1,17 @@
+# VideoEncoderConfig example for AV1 VA-API hardware encoder.
+# This file matches the CLI defaults for `rebake export --codec av1_vaapi`.
+# Requires AMD VCN 4.0+ (RDNA 3) or Intel Arc GPU
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_av1_vaapi.yaml
+
+fps: 100
+gop: 100
+crf: "28"
+scaling: Bicubic
+codec_config:
+  codec: AV1_VAAPI
+  qp: 124  # Quantization parameter (0-255, lower = better quality)
+  # Optional parameters:
+  # device: /dev/dri/renderD128
+  # profile: main
+  # b-depth: 2     # B-frame depth (0-7)
+  # async-depth: 4 # Parallel encoding depth (1-64)

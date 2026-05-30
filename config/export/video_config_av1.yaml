@@ -1,0 +1,17 @@
+# VideoEncoderConfig example for AV1 codec (SVT-AV1)
+# Use with: rebake export data.mcap -o output --video-config config/export/video_config_av1.yaml
+
+fps: 100
+gop: 20
+crf: "34"
+scaling: Bicubic
+codec_config:
+  codec: AV1
+  preset: 10
+  # Optional parameters (uncomment to use):
+  # lp: 4              # Logical processors (parallelism)
+  # pin: 0             # Pin to specific CPU
+  # film-grain: 8      # Film grain synthesis level (0-50)
+  # film-grain-denoise: true
+  # lookahead: 120     # Lookahead distance for better quality
+  # fast-decode: 0     # Prioritize decode speed (0=off, 1-2=level)

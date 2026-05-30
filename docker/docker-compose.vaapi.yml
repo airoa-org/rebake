@@ -1,0 +1,27 @@
+# VA-API Hardware Encoding Override
+#
+# Enables GPU-accelerated video encoding via VA-API (AMD/Intel).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d
+#
+# Requirements:
+#   - /dev/dri must exist on host
+#   - User must have access to video group
+#
+# LIBVA_DRIVER_NAME is intentionally not fixed here. libva can usually
+# auto-select the correct driver (for example radeonsi on AMD GPU/iGPU,
+# iHD on modern Intel GPU/iGPU).
+# If auto-detection fails, set LIBVA_DRIVER_NAME on the host before running
+# docker compose and it will be passed through to the container.
+
+services:
+  rebake-dev:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+    environment:
+      - CARGO_HOME=/root/.cargo
+      - RUST_BACKTRACE=1
+      - LIBVA_DRIVER_NAME

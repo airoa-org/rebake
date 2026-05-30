@@ -1,0 +1,41 @@
+[project]
+name = "rebake"
+version = "0.1.0"
+description = "Python bindings for rebake-rs robotics data processing library"
+readme = "README.md"
+authors = [
+    { name = "masafumi-airoa", email = "takahashi.masafumi@airoa.org" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.26.0",
+    "patchelf>=0.17.2.4",
+    "pyarrow>=22.0.0",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pillow>=10.0",
+    "rosbags>=0.9,<0.11",
+]
+dev = [
+    "ruff>=0.8",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+]
+
+[tool.maturin]
+module-name = "rebake._internal"
+python-source = "."
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.rs" }, { file = "Cargo.toml" }, { file = "Cargo.lock" }]
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
