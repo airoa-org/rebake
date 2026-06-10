@@ -48,19 +48,28 @@ use crate::rosbag_utils;
 /// Video codec for encoding.
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum Codec {
+    /// AV1 via SVT-AV1 software encoder.
     Av1,
+    /// H.264 via x264 software encoder.
     H264,
+    /// HEVC via x265 software encoder.
     H265,
+    /// AV1 via VA-API hardware encoder.
     #[value(name = "av1_vaapi")]
     Av1Vaapi,
+    /// H.264 via VA-API hardware encoder.
     #[value(name = "h264_vaapi")]
     H264Vaapi,
+    /// HEVC via VA-API hardware encoder.
     #[value(name = "h265_vaapi")]
     H265Vaapi,
+    /// AV1 via NVIDIA NVENC hardware encoder.
     #[value(name = "av1_nvenc")]
     Av1Nvenc,
+    /// H.264 via NVIDIA NVENC hardware encoder.
     #[value(name = "h264_nvenc")]
     H264Nvenc,
+    /// HEVC via NVIDIA NVENC hardware encoder.
     #[value(name = "h265_nvenc")]
     H265Nvenc,
 }
@@ -68,7 +77,7 @@ pub enum Codec {
 /// Depth video codec for encoding.
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum DepthCodec {
-    /// FFV1 lossless (no hardware required).
+    /// FFV1 lossless software encoder.
     Ffv1,
     /// AV1 via VA-API hardware encoder.
     #[value(name = "av1_vaapi")]
@@ -101,7 +110,7 @@ impl std::fmt::Display for DepthCodec {
 /// For custom multi-stage pipelines, use 'rebake run' instead.
 #[derive(Args, Debug, Clone)]
 pub struct ExportArgs {
-    /// Input rosbag file(s) or directory. Supports .mcap and .bag files.
+    /// Input ROS bag file(s), or a directory of them (.bag or .mcap).
     #[arg(
         required_unless_present = "export_single",
         value_name = "PATH",
@@ -125,44 +134,45 @@ pub struct ExportArgs {
         long,
         value_name = "FILE",
         value_hint = clap::ValueHint::FilePath,
-        conflicts_with_all = ["fps", "codec", "qp"]
+        conflicts_with_all = ["fps", "codec", "qp"],
+        help_heading = "RGB video options"
     )]
     pub video_config: Option<Utf8PathBuf>,
 
-    /// Video frame rate.
-    #[arg(long, default_value_t = 100, value_name = "N")]
+    /// RGB video frame rate.
+    #[arg(long, default_value_t = 100, value_name = "N", help_heading = "RGB video options")]
     pub fps: u32,
 
-    /// Video codec.
-    #[arg(long, default_value_t = Codec::Av1, value_enum)]
+    /// RGB video codec.
+    #[arg(long, default_value_t = Codec::Av1, value_enum, help_heading = "RGB video options")]
     pub codec: Codec,
 
-    /// Quantization parameter override for QP-based hardware codecs.
+    /// Quality (QP) override for the QP-based hardware codecs.
     ///
     /// Defaults: h264_vaapi=21, h264_nvenc=26, h265_nvenc=25, av1_nvenc=130.
-    #[arg(long, value_name = "N", conflicts_with = "video_config")]
+    #[arg(long, value_name = "N", conflicts_with = "video_config", help_heading = "RGB video options")]
     pub qp: Option<u32>,
 
     /// Depth video codec.
-    #[arg(long, default_value_t = DepthCodec::Av1, value_enum)]
+    #[arg(long, default_value_t = DepthCodec::Av1, value_enum, help_heading = "Depth video options")]
     pub depth_codec: DepthCodec,
 
     /// Depth video frame rate.
-    #[arg(long, default_value_t = 30, value_name = "N")]
+    #[arg(long, default_value_t = 30, value_name = "N", help_heading = "Depth video options")]
     pub depth_fps: u32,
 
     /// Maximum depth in millimeters for Q10Clip4 quantization.
     /// Only used for lossy depth codecs (ignored for FFV1).
-    #[arg(long, default_value_t = 4092, value_name = "MM")]
+    #[arg(long, default_value_t = 4092, value_name = "MM", help_heading = "Depth video options")]
     pub depth_max_mm: u16,
 
-    /// Quantization parameter for depth NVENC codecs.
+    /// Quality (QP) for the depth NVENC codecs.
     ///
     /// Defaults: h265_nvenc=10, av1_nvenc=20.
-    #[arg(long, value_name = "N")]
+    #[arg(long, value_name = "N", help_heading = "Depth video options")]
     pub depth_qp: Option<u32>,
 
-    /// Maximum number of parallel processes.
+    /// ROS bags to convert in parallel.
     #[arg(short = 'j', long = "jobs", default_value_t = 1, value_name = "N")]
     pub jobs: usize,
 

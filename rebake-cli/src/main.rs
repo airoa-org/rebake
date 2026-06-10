@@ -28,17 +28,18 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Run a YAML-configured pipeline on .bag/.mcap files.
+    /// Run a YAML-configured pipeline over ROS bags or an intermediate format.
     ///
-    /// Use this for complex multi-stage pipelines. For simple rosbag-to-Parquet
-    /// conversion, use 'rebake export' instead.
+    /// Use this for multi-stage processing: time synchronization, transform-tree
+    /// math, action labels, and LeRobot v2.1 output. For a plain conversion to the
+    /// intermediate format, use 'rebake export' instead.
     Run(RunArgs),
 
-    /// Export .bag/.mcap files to structured Parquet + Video format.
+    /// Export ROS bags to a reusable intermediate format (Parquet + video).
     ///
-    /// This is the simplest way to convert rosbag files without writing a YAML
-    /// configuration. For custom pipelines with TF transforms, time synchronization,
-    /// or LeRobot v2.1 output, use 'rebake run' instead.
+    /// This is the fastest way out of the bag format, without writing a YAML
+    /// configuration. For custom pipelines with TF transforms, time
+    /// synchronization, or LeRobot v2.1 output, use 'rebake run' instead.
     Export(ExportArgs),
 
     /// Merge multiple LeRobot v2.1 datasets into a single dataset.
@@ -53,10 +54,11 @@ enum Commands {
 
 #[derive(clap::Args, Debug)]
 struct RunArgs {
-    /// Input path(s). Interpretation depends on the first stage in the pipeline.
+    /// Input path(s). How they're read depends on the pipeline's first stage.
     ///
-    /// - Rosbag ingestors: accepts .bag/.mcap files or directories containing them
-    /// - ParquetVideoIngestor: accepts rebake intermediate-format bundle directories
+    /// A ROS bag ingestor reads .bag/.mcap files or directories of them.
+    ///
+    /// ParquetVideoIngestorConfig reads rebake intermediate-format directories.
     #[arg(value_name = "PATH", value_hint = clap::ValueHint::AnyPath)]
     pub input_paths: Vec<Utf8PathBuf>,
 
@@ -75,7 +77,7 @@ struct RunArgs {
     #[arg(long, hide = true, conflicts_with = "config")]
     config_data: Option<String>,
 
-    /// Maximum number of parallel processes.
+    /// Inputs to process in parallel.
     #[arg(short = 'j', long = "jobs", default_value_t = 1, value_name = "N")]
     jobs: usize,
 }
