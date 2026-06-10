@@ -34,7 +34,7 @@ Because the heavy work lives in the intermediate format, re-curating with a diff
 ## Quickstart
 
 > [!NOTE]
-> Each ROS bag needs a small `meta.json` sidecar (its dataset id, plus segment labels for the full pipeline); the shipped configs already expect it. See [docs/configuration.md](docs/configuration.md#metadata-requirement).
+> Each ROS bag needs a small `meta.json` sidecar (its dataset id, plus segment labels for the full pipeline); the shipped configs already expect it. See [docs/metadata.md](docs/metadata.md).
 
 Build it in the dev container:
 
@@ -51,7 +51,7 @@ just build      # → ./target/release/rebake-cli
 **Decode your ROS bags into a queryable intermediate format.** Point at a single `.bag`/`.mcap` or a whole directory of them; `-j` converts the ROS bags in parallel, each in its own process:
 
 ```bash
-rebake-cli export ./bags -o ./out -j 8
+rebake-cli export ./yubi_recordings -o ./out -j 8
 ```
 
 Your opaque ROS bags are now plain Parquet and video — explore them with anything, no rebake required:
@@ -67,7 +67,7 @@ duckdb -c "SELECT * FROM 'out/*/parquet/joint_states.parquet' LIMIT 5"
 **Bake LeRobot v2.1 datasets** when you're ready to train — one declarative pipeline, no per-robot code, the same parallel batch over a directory:
 
 ```bash
-rebake-cli run ./bags -c config/pipeline/yubi.yaml -j 8
+rebake-cli run ./yubi_recordings -c config/pipeline/yubi.yaml -j 8
 ```
 ```text
 lerobot_dataset/
@@ -109,7 +109,7 @@ Ingest (ROS 1/2, or re-ingest a rebake intermediate) · Synchronize (ZOH / neare
 
 ## Bring your own robot
 
-A new robot is one YAML file that maps its ROS topics and fields (JSON Pointer) to LeRobot features:
+A new robot is one YAML file that maps its ROS topics and field paths to LeRobot features:
 
 ```yaml
 # robot_model.yaml
@@ -163,8 +163,12 @@ See [python/](python/) for the full API and examples.
 
 ## Learn more
 
+- **[Guide](docs/guide.md)** — create a dataset for a new robot
 - **[CLI](docs/cli.md)** — `run`, `export`, `merge`
-- **[Configuration](docs/configuration.md)** — pipelines, robot models, encoding
+- **[Configuration](docs/configuration.md)** — pipelines and robot models
+- **[Encoding](docs/encoding.md)** — RGB and depth codec settings
+- **[Metadata](docs/metadata.md)** — the `meta.json` sidecar
+- **[Intermediate format](docs/intermediate-format.md)** — Parquet + video layout
 - **[Hardware acceleration](docs/hardware.md)** — VA-API and NVENC
 - **[Changelog](CHANGELOG.md)** — what's in this release (rebake is pre-1.0; expect changes)
 
