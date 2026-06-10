@@ -1,383 +1,186 @@
-# CLI の使い方
+# CLI
 
-`rebake-cli` ツールには 3 つの動作モードがあります:
+`rebake-cli` のコマンドは 3 つです。`export` は ROS bag を中間フォーマットへ、`run` は YAML のパイプラインで LeRobot データセットへ、`merge` は複数の LeRobot データセットを 1 つへまとめます。
 
-1. **Run モード** (`rebake-cli run`) - YAML 設定ファイルによるフルパイプライン実行
-2. **Export モード** (`rebake-cli export`) - Parquet + Video 形式へのシンプルなエクスポート
-3. **Merge モード** (`rebake-cli merge`) - 複数の LeRobot v2.1 データセットを 1 つに統合
+このページはコマンドのリファレンスです。パイプラインとロボットモデルの書き方は[設定](configuration_ja.md)、コーデックは[エンコード](encoding_ja.md)、各 ROS bag に添える `meta.json` は[メタデータ](metadata_ja.md)、はじめての流れは[ガイド](guide_ja.md)、ビルドは [README](../README_ja.md) へ。
 
-## インストール
+## どのコマンドを使うか
 
-```bash
-cargo install --path rebake-cli
-```
+| 手元にあるもの | 欲しいもの | コマンド |
+|---|---|---|
+| ROS bag（`.bag` / `.mcap`） | 問い合わせ・再利用に向く中間フォーマット | [`export`](#export) |
+| ROS bag、または中間フォーマット | LeRobot v2.1 データセット | [`run`](#run) |
+| 複数の LeRobot v2.1 データセット | 1 つにまとまったデータセット | [`merge`](#merge) |
 
-これにより `rebake-cli` バイナリが Cargo の bin ディレクトリ（通常は `~/.cargo/bin/`）にインストールされます。
+通常は `run` で ROS bag ごとに 1 データセットを書き出し、最後に `merge` で結合します。何度も設定を試すなら、先に `export` で中間フォーマットへ変換しておくと、元の ROS bag を読み直さずに `run` をやり直せます。
 
----
+## export
 
-## Run コマンド
-
-`run` コマンドは、YAML 設定ファイルで定義されたフルパイプラインを実行します。
-
-YAML なしでシンプルに rosbag を Parquet に変換したい場合は、代わりに `rebake-cli export` を使用してください。
-
-### 基本的な使い方
+ROS bag を、設定ファイルなしで[中間フォーマット](intermediate-format_ja.md)（トピックごとの Parquet + 動画）へ変換します。
 
 ```bash
-rebake-cli run <PATH> -c <CONFIG_FILE>
+rebake-cli export <PATH>... -o <DIR> [options]
 ```
 
-### 引数
+出力は ROS bag ごとに `<DIR>/<uuid>/` へ作られます。中身は `parquet/` と `videos/` です。詳しいレイアウトは[中間フォーマット](intermediate-format_ja.md#レイアウト)を参照してください。
 
-| Argument | Short | Required | Default | Description |
-|----------|-------|----------|---------|-------------|
-| `<PATH>` | - | Yes | - | 入力パス。Rosbag ingestorは `.bag`/`.mcap` を受け付け、`ParquetVideoIngestor` は中間形式データディレクトリ（`parquet/` + `videos/`）を受け付けます |
-| `--config` | `-c` | Yes* | - | パイプライン設定ファイル（YAML） |
-| `--jobs` | `-j` | No | 1 | 並列パイプライン数 |
+各 ROS bag の隣には [meta.json](metadata_ja.md) が必要です。`.bag` は ROS 1 として、`.mcap` は ROS 2 として読まれます。
 
-\* `--config` または `--config-data` のいずれかを指定する必要があります。`--config-data` はサブプロセス起動用の内部オプションであり、直接使用しないでください。
+### 基本オプション
 
-### 使用例
+| オプション | 既定 | 意味 |
+|---|---|---|
+| `<PATH>...` | 必須 | ROS bag ファイル、またはそれらを含むディレクトリ |
+| `-o`, `--output <DIR>` | 必須 | 出力ディレクトリ。録画ごとに `<uuid>/` ができます。別名: `--output-dir` |
+| `-j`, `--jobs <N>` | `1` | 並列に変換する ROS bag の数 |
 
-#### ディレクトリの処理
+### RGB オプション
 
-ディレクトリを渡すと、CLI は再帰的にすべての `.bag` および `.mcap` ファイルを検索します。`rosbag reindex` によって作成されたバックアップファイル（`.orig.bag`、`.orig.mcap`）は自動的に除外されます。
+| オプション | 既定 | 意味 |
+|---|---|---|
+| `--fps <N>` | `100` | RGB 動画のフレームレート |
+| `--codec <CODEC>` | `av1` | RGB コーデック。`av1`、`h264`、`h265`、`av1_vaapi`、`h264_vaapi`、`h265_vaapi`、`av1_nvenc`、`h264_nvenc`、`h265_nvenc` |
+| `--qp <N>` | コーデック別 | `h264_vaapi` と RGB の NVENC コーデックの QP を上書きします |
+| `--video-config <FILE>` | なし | YAML の `VideoEncoderConfig` を使います。`--fps`、`--codec`、`--qp` とは併用できません |
+
+`--qp` の既定値は `h264_vaapi=21`、`h264_nvenc=26`、`h265_nvenc=25`、`av1_nvenc=130` です。ソフトウェアコーデックと `av1_vaapi` / `h265_vaapi` では `--qp` は使いません。
+
+### 深度オプション
+
+| オプション | 既定 | 意味 |
+|---|---|---|
+| `--depth-codec <CODEC>` | `av1` | 深度コーデック。`ffv1`、`av1`、`av1_vaapi`、`h265_vaapi`、`av1_nvenc`、`h265_nvenc` |
+| `--depth-fps <N>` | `30` | 深度動画のフレームレート |
+| `--depth-max-mm <MM>` | `4092` | 非可逆の深度動画で残す最大距離（mm）。`ffv1` では無視されます |
+| `--depth-qp <N>` | コーデック別 | 深度の NVENC コーデックの QP を上書きします |
+
+`--depth-qp` の既定値は `h265_nvenc=10`、`av1_nvenc=20` です。`--depth-*` は RGB 設定から独立しているので、`--video-config` とも併用できます。コーデック選びと詳細な既定値は[エンコード](encoding_ja.md#export-の既定値)へ。
+
+### 例
 
 ```bash
-rebake-cli run \
-    /data/recordings/ \
-    -c config/pipeline/hsr2.yaml
+# ディレクトリ内の ROS bag を 8 並列で中間フォーマットへ
+rebake-cli export ./yubi_recordings -o ./intermediate -j 8
+
+# 学習時のデコードが速い H.264 で RGB を保存
+rebake-cli export ./recording.mcap -o ./intermediate --fps 60 --codec h264
+
+# 深度をロスレス FFV1 で保存
+rebake-cli export ./yubi_recordings -o ./intermediate --depth-codec ffv1 --depth-fps 15
+
+# RGB の詳細設定を YAML から読む
+rebake-cli export ./yubi_recordings -o ./intermediate --video-config config/export/video_config_h265.yaml
 ```
 
-#### 並列処理
+どれかの録画が失敗しても残りは処理され、最後に失敗の一覧を出して終了コード 1 で終わります。
 
-複数ファイルを並列に処理します:
+## run
+
+YAML のパイプライン設定に従って入力を処理します。LeRobot データセットを作る常用コマンドです。
 
 ```bash
-rebake-cli run \
-    /data/recordings/ \
-    -c config/pipeline/hsr2.yaml \
-    -j 4
+rebake-cli run <PATH>... -c <CONFIG> [-j <N>]
 ```
 
-#### 単一ファイル
+| オプション | 既定 | 意味 |
+|---|---|---|
+| `<PATH>...` | 必須 | 入力。読み方はパイプラインの最初の Ingestor で決まります |
+| `-c`, `--config <FILE>` | 必須 | パイプライン設定（YAML） |
+| `-j`, `--jobs <N>` | `1` | 並列に処理する入力の数 |
 
-単一の rosbag ファイルを直接指定することもできます:
+ROS bag の Ingestor で始まるパイプラインなら、入力は `.bag` / `.mcap` ファイルか、それらを含むディレクトリです。`ParquetVideoIngestorConfig` で始まるパイプラインなら、入力は中間フォーマットのディレクトリか、その親ディレクトリです。入力パスを YAML の中に書く必要はありません。
+
+`run` に出力先フラグはありません。作業出力は設定の `work_dir` の下へ、LeRobot データセットは `LeRobotV21TransformerConfig.outdir/<uuid>/` へ書かれます。ふだん見るのは後者です。1 つの入力が失敗したとき残りを続けるかは、フラグではなく設定の `stop_on_error`（既定: `true`）で決まります。詳しくは[パイプライン設定](configuration_ja.md#パイプライン設定)へ。
 
 ```bash
-rebake-cli run \
-    /data/recording.mcap \
-    -c config/pipeline/hsr2.yaml
+# ROS bag のディレクトリを 8 並列で LeRobot へ
+rebake-cli run ./yubi_recordings -c config/pipeline/yubi.yaml -j 8
+
+# 書き出し済みの中間フォーマットから作り直す
+rebake-cli run ./intermediate -c config/pipeline/yubi_from_parquet.yaml
 ```
 
-#### 中間形式データ (Parquet/MP4)
+## merge
 
-最初のステージが `ParquetVideoIngestor` の場合、以下のいずれかを渡すことができます:
-
-- 中間形式データセットディレクトリを直接指定
-- 複数の中間形式データセットを含む親ディレクトリを指定
-
-指定されたディレクトリ自体がデータセットディレクトリでない場合、CLI は `parquet/_topic_type_map.parquet` と `parquet/_metadata.parquet` を探して、再帰的にデータセットディレクトリを検出します。
-
-YAML 設定に入力パスを繰り返し記述する必要はありません。
+`run` が録画ごとに作った LeRobot データセットを、1 つの学習用データセットへまとめます。エピソード番号の振り直し、タスクの重複除去、メタデータの統合を行います。動画は再エンコードせずコピーするので、画質は変わりません。
 
 ```bash
-rebake-cli run \
-    /data/exported_bundle/ \
-    -c config/pipeline/yubi_from_parquet.yaml
+rebake-cli merge <SOURCE_DIR> -o <DIR> [--chunk-size <N>]
 ```
 
----
+| オプション | 既定 | 意味 |
+|---|---|---|
+| `<SOURCE_DIR>` | 必須 | この直下で `meta/info.json` を持つディレクトリがデータセットとして検出されます |
+| `-o`, `--output <DIR>` | 必須 | 統合後のデータセットの置き場 |
+| `--chunk-size <N>` | 先頭のデータセットに合わせる | 1 チャンクあたりのエピソード数。別名: `--chunks-size` |
 
-## Export コマンド
-
-`export` コマンドは、YAML 設定ファイルなしで rosbag ファイルをエクスポートするシンプルな方法を提供します。データレイクへの取り込みに適した、構造化された Parquet ファイルとエンコード済み動画を出力します。
-
-ROS 1 bag（`.bag`）と ROS 2 MCAP（`.mcap`）の両方の入力に対応しています。
-
-### 基本的な使い方
+検出は名前の辞書順なので、結果のエピソード順は毎回同じです。統合できるのは 2 つ以上のデータセットで、`fps`、`codebase_version`、feature の構成（名前・型・形、動画ならコーデックとピクセルフォーマット）が一致している必要があります。`merge` に `-j` はありません。
 
 ```bash
-rebake-cli export <PATH> -o <DIR>
+rebake-cli merge ./lerobot_yubi -o ./lerobot_merged
 ```
 
-### 出力構造
+成功すると `Merge completed successfully.` と表示されます。
 
-```
-<DIR>/
-  <UUID>/
-    parquet/
-      <topic>.parquet           # トピックデータ
-      _metadata.parquet         # Rosbag メタデータ
-      _topic_type_map.parquet   # トピック名からメッセージ型へのマッピング
-      _video_registry.parquet   # トピック名から動画パスへのマッピング
-    videos/
-      <topic>.mp4               # エンコード済み動画ファイル
-```
+## 共通の規約
 
-### 引数
+### 入力パス
 
-| Argument | Short | Required | Default | Description |
-|----------|-------|----------|---------|-------------|
-| `<PATH>` | - | Yes | - | 入力 `.bag`/`.mcap` ファイルまたは rosbag ファイルを含むディレクトリ |
-| `--output` | `-o` | Yes | - | 出力ディレクトリ |
-| `--video-config` | - | No | - | VideoEncoderConfig YAML ファイルのパス（微調整用） |
-| `--fps` | - | No | 100 | 動画フレームレート |
-| `--codec` | - | No | av1 | 動画コーデック (av1, h264, h265, av1_vaapi, h264_vaapi, h265_vaapi, av1_nvenc, h264_nvenc, h265_nvenc) |
-| `--qp` | - | No | - | QP ベースのハードウェア codec の QP override。`h264_vaapi`, `h264_nvenc`, `h265_nvenc`, `av1_nvenc` に適用。既定値は h264_vaapi=21, h264_nvenc=26, h265_nvenc=25, av1_nvenc=130。`av1_vaapi`/`h265_vaapi`（固定の既定値）とソフトウェア codec（crf を使用）では無視されます |
-| `--depth-codec` | - | No | av1 | 深度動画コーデック (ffv1, av1, av1_vaapi, h265_vaapi, av1_nvenc, h265_nvenc) |
-| `--depth-fps` | - | No | 30 | 深度動画フレームレート |
-| `--depth-max-mm` | - | No | 4092 | Q10Clip4 量子化における最大深度（mm 単位、FFV1 では無視されます） |
-| `--depth-qp` | - | No | - | 深度 NVENC の QP override。既定値は h265_nvenc=10, av1_nvenc=20 |
-| `--jobs` | `-j` | No | 1 | 最大並列プロセス数 |
+ROS bag 入力（`export` と、ROS bag Ingestor で始まる `run`）:
 
-> **注意**: `--video-config` は `--fps`, `--codec`, `--qp` と排他的です。`--depth-*` オプションは独立しており、`--video-config` または `--fps`/`--codec` のどちらとも併用できます。
+- 単一ファイルは `.bag` か `.mcap` であること。それ以外の拡張子は拒否されます。
+- ディレクトリは再帰的に探索されます。見つかったパスはソートされ、重複は除かれます。
+- `rosbag reindex` が残すバックアップ（`.orig.bag` / `.orig.mcap`）は、探索では飛ばされ、直接指定すると拒否されます。
+- 1 回の `run` に `.bag` と `.mcap` は混ぜられません。パイプラインの Ingestor は 1 種類だからです。`export` はファイルごとに読み分けるので混在できます。
 
-### 使用例
+中間フォーマット入力（`ParquetVideoIngestorConfig` で始まる `run`）:
 
-#### ディレクトリのエクスポート
+- `parquet/_metadata.parquet` と `parquet/_topic_type_map.parquet` の両方を持つディレクトリが中間フォーマットとみなされます。
+- `videos/` の有無は判定に使われません。状態だけの中間フォーマットも認識されます。
+- 渡したディレクトリ自体が中間フォーマットでなければ、その下を探索します。
 
-```bash
-rebake-cli export /data/recordings/ -o /data/output
-```
+### 並列実行
 
-#### 並列処理
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output -j 4
-```
-
-単一の GeForce GPU で NVENC codec を使う場合は `-j` を `8` 以下に抑えてください — consumer 向け GPU では NVIDIA が同時 NVENC session 数を制限しているためです（Quadro/RTX Pro/Tesla は制限なし）。同じ GPU で他の NVENC job が動いている場合はさらに小さい値にします。
-
-#### カスタム動画設定
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output \
-    --fps 60 --codec h264
-```
-
-`--video-config` を使わずに `--codec av1_vaapi` を指定した場合、`rebake export` は `gop: 100`, `qp: 124` を既定値として使います。
-
-NVENC コーデックも同様に動作します。`--video-config` を使わない場合は、コーデックごとに次の既定値が適用されます:
-
-| Codec | Default QP | Default preset | Default GOP |
-|-------|-----------:|----------------|------------:|
-| `h264_nvenc` | 26 | P5 | 20 |
-| `h265_nvenc` | 25 | P4 | 100 |
-| `av1_nvenc` | 130 | P7 | 20 |
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output \
-    --fps 100 --codec av1_nvenc
-```
-
-`--qp` で `h264_vaapi` と NVENC コーデック（`h264_nvenc`, `h265_nvenc`, `av1_nvenc`）の QP を上書きできます。`av1_vaapi` と `h265_vaapi` は固定の既定値を使い、`--qp` は無視されます。`b_frames`, `rc_lookahead`, `tune`, `profile`, `gpu` といった他のオプションを指定したい場合は、`config/export/` のサンプルを参考に `--video-config` を使ってください。
-
-#### カスタム深度動画設定
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output \
-    --depth-codec ffv1 --depth-fps 15
-```
-
-深度 NVENC コーデックも同じパターンで使えます。`--video-config` を使わない場合は、`--depth-max-mm 4092` 向けに保守寄りに調整した QP を既定値として適用します:
-
-| Depth codec | Default QP | Default preset |
-|-------------|-----------:|----------------|
-| `h265_nvenc` | 10 | P4 |
-| `av1_nvenc` | 20 | P4 |
-
-`--depth-qp` で QP を上書きできます:
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output \
-    --depth-codec av1_nvenc --depth-qp 24
-```
-
-#### 動画設定ファイルの使用
-
-パラメータ最適化の実験には、YAML 設定ファイルを使用してください:
-
-```bash
-rebake-cli export /data/recordings/ -o /data/output \
-    --video-config video_config.yaml
-```
-
-動画設定ファイルの例（`video_config.yaml`）:
-
-```yaml
-fps: 30
-gop: 10
-crf: "23"
-scaling: Bicubic
-codec_config:
-  codec: H264
-  preset: medium
-  # オプション: tune: [film, fastdecode]
-```
-
-その他の動画設定例は `config/export/` を参照してください:
-- `video_config_av1.yaml` - AV1 (SVT-AV1) ソフトウェアエンコーダ
-- `video_config_h264.yaml` - H.264 (x264) ソフトウェアエンコーダ
-- `video_config_h265.yaml` - H.265 (x265) ソフトウェアエンコーダ
-- `video_config_av1_vaapi.yaml` - AV1 VA-API ハードウェアエンコーダ
-- `video_config_av1_nvenc.yaml` - AV1 NVENC ハードウェアエンコーダ
-- `video_config_h264_nvenc.yaml` - H.264 NVENC ハードウェアエンコーダ
-- `video_config_h265_nvenc.yaml` - H.265 NVENC ハードウェアエンコーダ
-
----
-
-## Merge コマンド
-
-`merge` コマンドは、複数の LeRobot v2.1 データセットを 1 つのデータセットに統合します。エピソードの再番号付け、タスクの重複排除、Parquet カラムの再マッピング、動画ファイルのコピー、メタデータの統合を処理します。
-
-一般的なワークフロー: `rebake run` -> `rebake merge`
-
-### 基本的な使い方
-
-```bash
-rebake-cli merge <SOURCE_DIR> -o <DIR>
-```
-
-`SOURCE_DIR` ディレクトリには複数の LeRobot データセットのサブディレクトリを配置してください。`meta/info.json` ファイルを持つ各サブディレクトリがデータセットとして自動検出されます。
-
-```
-SOURCE_DIR/
-├── dataset_a/        ← 検出される（meta/info.json あり）
-│   ├── meta/
-│   ├── data/
-│   └── videos/
-├── dataset_b/        ← 検出される
-│   ├── meta/
-│   ├── data/
-│   └── videos/
-└── README.txt        ← 無視される（meta/info.json なし）
-```
-
-### 引数
-
-| Argument | Short | Required | Default | Description |
-|----------|-------|----------|---------|-------------|
-| `<SOURCE_DIR>` | - | Yes | - | LeRobot データセットのサブディレクトリを含むディレクトリ |
-| `--output` | `-o` | Yes | - | 統合後のデータセットの出力ディレクトリ |
-| `--chunk-size` | - | No | (最初のソースに準拠) | チャンクあたりのエピソード数を上書き |
-
-### 使用例
-
-#### 基本的な統合
-
-```bash
-rebake-cli merge /data/datasets -o /data/merged
-```
-
-#### カスタムチャンクサイズの指定
-
-```bash
-rebake-cli merge /data/datasets -o /data/merged --chunk-size 500
-```
-
----
-
-## 設定
-
-設定ファイルの詳細な書式については、[設定リファレンス](configuration_ja.md) を参照してください。
-
-クイックリンク:
-- [Pipeline 設定](configuration_ja.md#pipeline-設定) - ステージ定義
-- [Stage Reference](configuration_ja.md#stage-reference) - ステージごとのオプション
-- [Robot Model 設定](configuration_ja.md#robot-model-設定) - トピックからfeatureへのマッピング
-
-## 対応ファイル形式
-
-### Rosbag 入力
-
-| Extension | Format |
-|-----------|--------|
-| `.bag` | ROS 1 bag |
-| `.mcap` | ROS 2 bag (MCAP) |
-
-### 中間形式入力
-
-| ディレクトリ構造 | Format |
-|-----------------|--------|
-| `parquet/` + `videos/` | rebake 中間形式 (Parquet + MP4) |
-
-パイプライン設定では、入力形式に対応した正しいingestorを使用してください:
-
-- `Rosbag1IngestorConfig` - `.bag` ファイル（ROS 1）用
-- `Rosbag2IngestorConfig` - `.mcap` ファイル（ROS 2）用
-- `ParquetVideoIngestorConfig` - 中間形式ディレクトリ（`parquet/` + `videos/`）用
-
-> **注意**: ディレクトリに異なるファイル形式（`.bag` と `.mcap`）が混在している場合は、別々のディレクトリに分けるか、それぞれの形式に対応した設定ファイルで CLI を個別に実行してください。
-
-> **注意**: バックアップファイル（`.orig.bag`、`.orig.mcap`）はサポートされていません。直接指定した場合、CLI はエラーを返します。
-
-## トラブルシューティング
-
-### よくあるエラーと解決策
-
-#### ファイルが見つからない
-
-```text
-Error: failed to access /path/to/file
-  Caused by: No such file or directory (os error 2)
-```
-
-**解決策**: ファイルパスを確認し、ファイルが存在することを確認してください。
-
-#### 権限エラー
-
-```text
-Error: failed to access /path/to/file
-  Caused by: Permission denied (os error 13)
-```
-
-**解決策**: `chmod +r <file>` で読み取り権限を付与してください。
-
-#### 無効な YAML 設定
-
-```text
-Error: while parsing a block mapping, did not find expected key at line 2 column 1
-```
-
-**解決策**: `yamllint config/your_config.yaml` で YAML ファイルを検証してください。
-
-#### rosbag ファイルが見つからない
-
-```text
-Error: no rosbag files found under directory: /path/to/dir
-```
-
-**解決策**: ディレクトリに `.bag` または `.mcap` ファイルが含まれていることを確認してください。
-
-#### 無効な rosbag 拡張子
-
-```text
-Error: rosbag files must have .bag or .mcap extension: /path/to/file.txt
-```
-
-**解決策**: ファイルの拡張子を `.bag` または `.mcap` に変更するか、有効な rosbag ファイルを指定してください。
-
-#### ステージの失敗
-
-```text
-Error: stage rosbag2_ingestor failed: missing required data: dataset in context
-  Caused by: missing required data: dataset in context
-```
-
-**解決策**: `logs/pipeline.log` を確認し、詳細なエラートレースとステージ固有の情報を調査してください。
+`-j` は入力単位の並列数です。`export` と `run` は、並列数が 2 以上のとき入力ごとに別プロセスで処理します。NVENC を使う場合、GPU ドライバ側の同時エンコード上限を超えると Encoder が失敗し始めるので、その場合は `-j` を下げてください。
 
 ### ログ
 
-CLI は詳細なログを `logs/pipeline.log` に出力します。stderr にもログを出力するには、以下を設定してください:
+詳しいログは `logs/pipeline.log` に書かれます。
+
+| 環境変数 | 既定 | 意味 |
+|---|---|---|
+| `REBAKE_LOG_DIR` | `logs` | `pipeline.log` を置くディレクトリ |
+| `RUST_LOG` | `warn` | ログフィルタ。`info` か `debug` にするとステージ単位の情報が増えます |
+| `REBAKE_LOG_STDERR` | 未設定 | `0` 以外の値を入れると stderr にもログを出します |
 
 ```bash
-export REBAKE_LOG_STDERR=1
+RUST_LOG=info REBAKE_LOG_STDERR=1 rebake-cli run ./yubi_recordings -c config/pipeline/yubi.yaml
 ```
 
-ログレベルを変更するには:
+`pipeline.log` は追記され、ローテーションされません。肥大したら削除してください。
 
-```bash
-export RUST_LOG=debug  # 選択肢: error, warn, info, debug, trace
+### ヘルプと終了コード
+
+`rebake-cli --help`、`rebake-cli <command> --help`、`rebake-cli --version` が使えます。失敗すると終了コード 1 で終わり、画面には `Error:` と `Caused by:` が表示されます。
+
+```text
+Error: <何が失敗したか>
+  Caused by: <原因>
 ```
+
+## うまくいかないとき
+
+| エラー文に含まれる断片 | 原因 | 直し方 |
+|---|---|---|
+| `input path must be provided` | `run` に入力パスが無い | `rebake-cli run <PATH> -c <CONFIG>` の形にする |
+| `no rosbag files found under directory` | ディレクトリに `.bag` / `.mcap` が無い | パスを確認する |
+| `rosbag files must have .bag or .mcap extension` | 対応しない拡張子のファイルを直接指定した | ROS bag ファイルかディレクトリを指定する |
+| `ignoring backup rosbag produced by rosbag reindex` | `.orig.bag` / `.orig.mcap` を直接指定した | `.orig` の付かない方の ROS bag を使う |
+| `bundle input must be a directory` | 中間フォーマット入力にファイルを渡した | 中間フォーマットのディレクトリを渡す |
+| `no rebake bundle directories found` | `run` の入力が中間フォーマットではない | `parquet/_metadata.parquet` と `parquet/_topic_type_map.parquet` を持つディレクトリ、またはその親を渡す |
+| `failed to read meta.json` | ROS bag の隣に `meta.json` が無い | [メタデータ](metadata_ja.md)の形式で `meta.json` を置く |
+| YAML の解析エラー（`while parsing ...`） | 設定ファイルの書式が壊れている | 行・列番号の指す箇所を直す |
+| `expected at least 2 dataset directories` | `merge` の入力にデータセットが 2 つ未満 | `meta/info.json` を持つデータセット群の親ディレクトリを渡す |
+| `FPS mismatch` / `codebase_version mismatch` / `feature ... mismatch` | `merge` するデータセットの構成が揃っていない | 同じパイプライン設定で作り直す |
+
+ステージ順序や `missing required data` 系は[設定の表](configuration_ja.md#うまくいかないとき)、メタデータ起因は[メタデータの表](metadata_ja.md#うまくいかないとき)へ。

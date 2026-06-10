@@ -1,14 +1,10 @@
-# Hardware-accelerated encoding
+# Hardware Acceleration
 
-[日本語版](hardware_ja.md)
+rebake encodes on CPU by default (SVT-AV1 / x264 / x265), so no GPU is required. This page covers container setup only when you choose VA-API codecs (AMD / Intel) or NVENC codecs (NVIDIA). For choosing codecs, see [encoding](encoding.md#choosing-a-codec).
 
-rebake encodes video on the CPU by default (SVT-AV1 / x264 / x265) and requires no GPU.
-The codecs below are optional accelerators; enable them only if you have the matching
-hardware.
+## VA-API (AMD / Intel)
 
-## VA-API hardware encoding (AMD / Intel)
-
-For GPU-accelerated video encoding (AMD/Intel), pass the VA-API override file:
+First confirm the host has a render device (`ls /dev/dri/renderD*`), then start the VA-API compose overlay.
 
 ```bash
 cd docker
@@ -16,42 +12,32 @@ docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
 docker compose exec rebake-dev bash
 ```
 
-Prerequisites:
-- `/dev/dri/renderD128` must exist on the host (`ls /dev/dri/renderD*`)
+The image includes AMD and Intel VA-API drivers, and libva normally chooses from the `/dev/dri` device. If auto-detection fails, set the driver for the GPU or iGPU that provides `/dev/dri`, not necessarily the CPU vendor.
 
-The Docker image includes VA-API drivers for AMD and Intel. By default, `LIBVA_DRIVER_NAME` is left unset so libva can auto-select the matching driver for the mounted `/dev/dri` device. If auto-detection fails, pass a driver name explicitly when starting the container.
-
-Choose the driver by the GPU/iGPU that provides `/dev/dri`, not by the CPU vendor alone:
-
-- `radeonsi`: AMD GPU/iGPU
-- `iHD`: modern Intel GPU/iGPU
-- `i965`: older Intel GPU/iGPU, if `iHD` is not supported
+- `radeonsi`: AMD GPU / iGPU
+- `iHD`: newer Intel GPU / iGPU
+- `i965`: older Intel GPU / iGPU when `iHD` does not work
 
 ```bash
 LIBVA_DRIVER_NAME=radeonsi docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
-LIBVA_DRIVER_NAME=iHD docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
 ```
 
-## NVIDIA NVENC hardware encoding
+## NVENC (NVIDIA)
 
-GPU-accelerated video encoding on NVIDIA requires:
-
-- NVIDIA driver compatible with NVENC. H.264 and H.265 NVENC are supported on most NVIDIA GPUs from Maxwell onwards (GTX 900-series and later); AV1 NVENC additionally requires Ada Lovelace or newer (RTX 4000-series and later)
-- Docker with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed
-- NVIDIA CDI devices generated on the host:
+You need three things: an NVIDIA driver with NVENC support (H.264 / H.265 on GTX 900 series or newer, AV1 on RTX 4000 series or newer), the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), and host-generated CDI device definitions.
 
 ```bash
 sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 nvidia-ctk cdi list
 ```
 
-If your host has the `nvidia-cdi-refresh` systemd units (check with `systemctl list-unit-files | grep nvidia-cdi-refresh`), enable the path unit so the CDI spec is refreshed after driver/toolkit changes:
+If your host has the `nvidia-cdi-refresh` systemd unit, enable it so definitions follow driver updates. Check with `systemctl list-unit-files | grep nvidia-cdi-refresh`.
 
 ```bash
 sudo systemctl enable --now nvidia-cdi-refresh.path
 ```
 
-Once those are in place, bring up the dev container with the NVENC compose override. `Dockerfile.nvenc` layers on top of the base `rebake:latest` image, so the base image must be built first:
+The NVENC image layers on top of the base image, so build the base first, then start the NVENC overlay.
 
 ```bash
 cd docker
@@ -60,7 +46,7 @@ docker compose -f docker-compose.yml -f docker-compose.nvenc.yml up -d --build
 docker compose exec rebake-dev bash
 ```
 
-If the dev container cannot reach the GPU, run these checks on the host to confirm CDI is wired up and the freshly built image can see the device:
+If the container cannot see the GPU, check both of these on the host:
 
 ```bash
 nvidia-ctk cdi list

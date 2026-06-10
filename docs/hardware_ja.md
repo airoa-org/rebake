@@ -1,13 +1,10 @@
-# ハードウェアアクセラレーションによるエンコード
+# ハードウェアアクセラレーション
 
-[English](hardware.md)
+rebake は既定では CPU でエンコードし（SVT-AV1 / x264 / x265）、GPU は不要です。このページは、VA-API（AMD / Intel）か NVENC（NVIDIA）のコーデックを使うときの、コンテナの準備手順です。どのコーデックを選ぶかは[エンコード](encoding_ja.md#コーデックを選ぶ)へ。
 
-rebake は既定で動画を CPU エンコード (SVT-AV1 / x264 / x265) し、GPU は不要です。以下の
-codec は任意のアクセラレータであり、対応ハードウェアがある場合のみ有効化してください。
+## VA-API（AMD / Intel）
 
-## VA-API ハードウェアエンコーディング (AMD / Intel)
-
-GPU アクセラレーションによる動画エンコード (AMD/Intel) を使用するには、VA-API override ファイルを指定します:
+ホストに `/dev/dri/renderD128` があることを確かめてから（`ls /dev/dri/renderD*`）、VA-API 用の compose 設定を重ねて起動します。
 
 ```bash
 cd docker
@@ -15,42 +12,32 @@ docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
 docker compose exec rebake-dev bash
 ```
 
-前提条件:
-- ホストに `/dev/dri/renderD128` が存在すること (`ls /dev/dri/renderD*`)
+イメージには AMD / Intel 両方の VA-API ドライバが入っており、既定では libva が `/dev/dri` のデバイスに合わせて自動選択します。自動選択に失敗するときは、デバイスを提供している GPU に合わせて明示します（CPU のメーカーではなく、`/dev/dri` を出している GPU / iGPU で選びます）。
 
-Docker image には AMD/Intel 用の VA-API driver を含めています。既定では `LIBVA_DRIVER_NAME` を設定せず、libva がマウントされた `/dev/dri` デバイスから適切な driver を自動選択します。自動判定が外れる場合だけ、起動時に driver 名を明示してください。
-
-driver は CPU ベンダーだけではなく、`/dev/dri` を提供している GPU/iGPU に合わせて選びます:
-
-- `radeonsi`: AMD GPU/iGPU
-- `iHD`: 新しめの Intel GPU/iGPU
-- `i965`: `iHD` が対応しない古い Intel GPU/iGPU
+- `radeonsi`: AMD の GPU / iGPU
+- `iHD`: 新しめの Intel GPU / iGPU
+- `i965`: `iHD` が使えない古い Intel GPU / iGPU
 
 ```bash
 LIBVA_DRIVER_NAME=radeonsi docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
-LIBVA_DRIVER_NAME=iHD docker compose -f docker-compose.yml -f docker-compose.vaapi.yml up -d --build
 ```
 
-## NVIDIA NVENC ハードウェアエンコーディング
+## NVENC（NVIDIA）
 
-NVIDIA GPU でアクセラレーションによる動画エンコードを使用するには、次の前提条件を満たしておく必要があります:
-
-- NVENC をサポートする NVIDIA driver。H.264 と H.265 NVENC は Maxwell 世代以降のほとんどの NVIDIA GPU で動作します（GTX 900 シリーズ以降）。AV1 NVENC を利用する場合は、加えて Ada Lovelace 世代以降の GPU が必要です（RTX 4000 シリーズ以降）
-- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) がインストールされていること
-- host 側で NVIDIA CDI devices が生成されていること:
+必要なものは 3 つです。NVENC 対応の NVIDIA ドライバ（H.264 / H.265 は GTX 900 番台以降、AV1 は RTX 4000 番台以降）、[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)、そしてホストで生成した CDI デバイス定義です。
 
 ```bash
 sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 nvidia-ctk cdi list
 ```
 
-host に `nvidia-cdi-refresh` の systemd unit がある場合（`systemctl list-unit-files | grep nvidia-cdi-refresh` で確認）、driver/toolkit 更新後に CDI spec が自動更新されるよう path unit を有効化してください:
+ホストに `nvidia-cdi-refresh` の systemd ユニットがある場合（`systemctl list-unit-files | grep nvidia-cdi-refresh` で確認）、ドライバ更新後も定義が追従するよう有効化しておきます。
 
 ```bash
 sudo systemctl enable --now nvidia-cdi-refresh.path
 ```
 
-これらが整ったら、NVENC の compose override で dev container を起動します。`Dockerfile.nvenc` はベースイメージ `rebake:latest` の上に layer を重ねる構造のため、まずベースイメージを build してから override を起動します:
+NVENC 用イメージはベースイメージの上に重ねるので、先にベースをビルドしてから NVENC の compose 設定で起動します。
 
 ```bash
 cd docker
@@ -59,7 +46,7 @@ docker compose -f docker-compose.yml -f docker-compose.nvenc.yml up -d --build
 docker compose exec rebake-dev bash
 ```
 
-dev container から GPU が見えない場合は、host 側で次を実行して CDI と build 済みイメージが正しく組み合わさっているかを確認できます:
+コンテナから GPU が見えないときは、ホストで次の 2 つを確かめます。
 
 ```bash
 nvidia-ctk cdi list
